@@ -10,6 +10,6 @@ class Hero(SQLModel, table=True):
     secret_name: str
     data: dict = Field(sa_type=JSONB, nullable=True)
 
-class test(SQLModel, table=True):
+class Test(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
     h: str

@@ -36,13 +36,23 @@ async def favicon():
     return root_path + "/static/favicon.ico"
 
 @app.get('/testdb')
-async def get_test_list():
-    return model.test_item()
+async def get_test_list(session: model.SessionDep):
+    statement = model.select(model.client.Test)
+    item = session.exec(statement).first()
+    session.close()
+    return item
 
 @app.post('/testdb')
-async def get_test_list():
-    return model.test_add()
+async def get_test_list(session: model.SessionDep):
+    item = model.client.Test(id=25, h="Viktor")
+    session.add(item)
+    session.commit()
+    session.close()
+    return "Item added"
 
 @app.get('/testdb/list')
-async def get_test_list():
-    return model.test_list()
+async def get_test_list(session: model.SessionDep):
+    statement = model.select(model.client.Test)
+    items = session.exec(statement).all()
+    session.close()
+    return items
