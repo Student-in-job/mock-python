@@ -37,14 +37,14 @@ async def favicon():
 
 @app.get('/testdb')
 async def get_test_list(session: model.SessionDep):
-    statement = model.select(model.client.Test)
+    statement = model.select(model.test.Test)
     item = session.exec(statement).first()
     session.close()
     return item
 
 @app.post('/testdb')
 async def get_test_list(session: model.SessionDep):
-    item = model.client.Test(id=25, h="Viktor")
+    item = model.test.Test(id=25, h="Viktor")
     session.add(item)
     session.commit()
     session.close()
@@ -52,7 +52,7 @@ async def get_test_list(session: model.SessionDep):
 
 @app.get('/testdb/list')
 async def get_test_list(session: model.SessionDep):
-    statement = model.select(model.client.Test)
+    statement = model.select(model.test.Test)
     items = session.exec(statement).all()
     session.close()
-    return items
+    return {'items': items}
