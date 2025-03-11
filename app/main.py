@@ -5,6 +5,8 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 import os.path
 import app.models as model
+import app.models.test as test
+import app.DTO.client as dto_client
 
 @asynccontextmanager
 async def init(apps: FastAPI):
@@ -37,14 +39,14 @@ async def favicon():
 
 @app.get('/testdb')
 async def get_test_list(session: model.SessionDep):
-    statement = model.select(model.test.Test)
+    statement = model.select(test.Test)
     item = session.exec(statement).first()
     session.close()
     return item
 
 @app.post('/testdb')
 async def get_test_list(session: model.SessionDep):
-    item = model.test.Test(id=25, h="Viktor")
+    item = test.Test(id=25, h="Viktor")
     session.add(item)
     session.commit()
     session.close()
@@ -52,7 +54,12 @@ async def get_test_list(session: model.SessionDep):
 
 @app.get('/testdb/list')
 async def get_test_list(session: model.SessionDep):
-    statement = model.select(model.test.Test)
+    statement = model.select(test.Test)
     items = session.exec(statement).all()
     session.close()
     return {'items': items}
+
+@app.post('/clients/onboarding')
+async def get_test_list(client: dto_client.DTOClient):
+    results = client
+    return {'client': results}

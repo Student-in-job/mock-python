@@ -1,9 +1,8 @@
 from typing import Annotated
 from datetime import datetime
 from fastapi import Depends
-from sqlmodel import Session, create_engine, SQLModel
+from sqlmodel import Session, create_engine, SQLModel, select
 
-# import app.models.test
 import app.models.client as client_models
 import app.models.partner as partner_models
 import app.models.contract as contract_models
