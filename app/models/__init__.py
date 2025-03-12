@@ -3,10 +3,10 @@ from datetime import datetime
 from fastapi import Depends
 from sqlmodel import Session, create_engine, SQLModel, select
 
-import app.models.client as client_models
-import app.models.partner as partner_models
-import app.models.contract as contract_models
-import app.models.limit as limit_models
+from app.models.client import *
+from app.models.partner import *
+from app.models.contract import *
+from app.models.limit import *
 
 from app.models.migrations import init_limit_types, init_clients, init_partners
 from app.models.app_settings import AppSettings
@@ -35,7 +35,7 @@ def create_db_and_tables():
 
 
 def save_contract(session: Session):
-    item = contract_models.Contract(
+    item = Contract(
         client_id=12,
         total_amount=100000,
         profit_amount=44000,
