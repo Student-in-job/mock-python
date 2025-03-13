@@ -26,8 +26,8 @@ class Client(SQLModel, table=True):
     documents: list["ClientDocument"] = Relationship(back_populates='client')
     addresses: list["ClientAddress"] = Relationship(back_populates='client')
 
-    def __init__(self, client_uuid:str, pinfl:str, name: str, surname: str, phone: str,
-                 birth_date: datetime, patronymic:str=None, gender: int=None):
+    def __init__(self, client_uuid: str, pinfl: str, name: str, surname: str, phone: str,
+                 birth_date: datetime, patronymic: str=None, gender: int=None):
         super().__init__()
         self.client_uuid = client_uuid
         self.pinfl = pinfl
