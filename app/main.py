@@ -1,13 +1,14 @@
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Response, status, Query
+from fastapi import FastAPI, Request, Response, status, Query
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 
 import os.path
 import app.models as models
 import app.models.test as test
-from app.DTO import DTOScore, DTOClient
+from app.DTO import DTOScore, DTOClient, DTOGuarantors, DTOCard, DTOCardConfirmation
 import app.classes.my_id_report as my_id
+from app.helpers import Generator
 
 from datetime import datetime
 
@@ -157,9 +158,91 @@ async def client_set_score(score: DTOScore, session: models.SessionDep, response
     return result_message
 
 
-@app.get('/clients/by-pinfl')
-async def client_get_client(session: models.SessionDep, response: Response, pinfl: str = Query(max_length=14)):
+# TODO: make response as Documented
+@app.get('/clients/by-pinfl/{pinfl}')
+async def client_get_client(session: models.SessionDep, response: Response, pinfl: str):
     session.statement = models.select(models.Client).where(models.Client.pinfl == pinfl)
     results = session.exec(session.statement)
     client = results.first()
     return client
+
+
+@app.post('/clients/{clientId}/guarantors')
+async def client_set_guarantors(session: models.SessionDep, response: Response, clientId: int,
+                                body: DTOGuarantors):
+    session.statement = models.select(models.Client).where(models.Client.id == clientId)
+    results = session.exec(session.statement)
+    client = results.first()
+    if client is not None:
+        for guarantor in body.guarantors:
+            new_guarantor = models.ClientGuarantor(client.id, guarantor.name, guarantor.phoneNumber)
+            session.add(new_guarantor)
+        session.commit()
+        return {"error": False, "message": 'Success'}
+    else:
+        response.status_code = status.HTTP_400_BAD_REQUEST
+        return {"error": True, "message": 'Can\'t find client'}
+
+
+@app.post('/clients/{clientId}/add-card')
+async def client_add_card(session: models.SessionDep, response: Response, clientId: int, card: DTOCard):
+    session.statement = models.select(models.Client).where(models.Client.id == clientId)
+    results = session.exec(session.statement)
+    client = results.first()
+    op_id: str = Generator.generate_string(10)
+    otp_id: str = Generator.generate_int(6)
+    if client is not None:
+        new_card_operation = models.Card_Operations(
+            client.id,
+            card.phoneNumber,
+            card.pan,
+            str(card.expiry),
+            op_id,
+            otp_id
+        )
+        session.add(new_card_operation)
+        session.commit()
+
+        return {"error": False, "message": 'Success', "data": {"operationId": op_id}}
+    else:
+        response.status_code = status.HTTP_400_BAD_REQUEST
+        return {"error": True, "message": '', "data": {"errorCode": 5002}}
+
+
+@app.post('/clients/{clientId}/confirm-card')
+async def client_confirm_card(session: models.SessionDep, response: Response, clientId: int,
+                              card_confirmation: DTOCardConfirmation):
+    session.statement = models.select(models.Card_Operations).where(
+        models.Card_Operations.client_id == clientId,
+        models.Card_Operations.operation_id == card_confirmation.operationId,
+        models.Card_Operations.otp_code == card_confirmation.otp,
+    )
+    results = session.exec(session.statement)
+    card_operation = results.first()
+    if card_operation is not None:
+        new_card = models.Card(
+            card_operation.client_id,
+            card_operation.phone,
+            card_operation.pan[:6] + '******' + card_operation.pan[12:],
+            card_operation.expire
+        )
+        session.add(new_card)
+        card_operation.is_confirmed = 1
+        session.add(card_operation)
+        session.commit()
+        return {"error": False, "message": 'Success', "data": {}}
+    else:
+        response.status_code = status.HTTP_400_BAD_REQUEST
+        return {"error": True, "message": '', "data": {"errorCode": 5011}}
+
+
+@app.get('/clients/get-card-otp/{operationId}')
+async def client_get_card_otp(session: models.SessionDep, response: Response, operationId: str):
+    session.statement = models.select(models.Card_Operations).where(models.Card_Operations.operation_id == operationId)
+    results = session.exec(session.statement)
+    card_operation = results.first()
+    if card_operation is not None:
+        return {"error": False, "message": 'Success', "data": {'otp': card_operation.otp_code}}
+    else:
+        response.status_code = status.HTTP_400_BAD_REQUEST
+        return {"error": True, "message": '', "data": {"errorCode": 5011}}

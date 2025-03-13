@@ -10,3 +10,13 @@ class DTOClient(BaseModel):
     myIdData: ReportMYID | None
     katmData: dict | None = None
     gnkData: dict | None = None
+
+
+class Guarantor(BaseModel):
+    name: str
+    phoneNumber: str
+
+
+class DTOGuarantors(BaseModel):
+    guarantors: list[Guarantor]
+

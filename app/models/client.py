@@ -134,3 +134,23 @@ class ClientLegalReport(SQLModel, table=True):
     data: dict = Field(sa_type=JSONB)
     created_at: datetime
     updated_at: datetime = Field(sa_column=Column(TIMESTAMP, default=datetime.now(), name='updated_at'))
+
+
+class ClientGuarantor(SQLModel, table=True):
+    __tablename__ = 'client_guarantors'
+    id: int = Field(
+        sa_column=Column(Integer, nullable=False, primary_key=True, name='id')
+    )
+    client_id: int = Field(default=None, foreign_key="clients.id", ondelete='CASCADE')
+    name: str = Field(max_length=150)
+    phone: str = Field(sa_column=Column(CHAR(12), name='phone', index=True))
+    created_at: datetime
+    updated_at: datetime = Field(sa_column=Column(TIMESTAMP, default=datetime.now(), name='updated_at'))
+
+    def __init__(self, client_id: int, name: str, phone: str):
+        super().__init__()
+        self.client_id = client_id
+        self.name = name
+        self.phone = phone
+        self.created_at = datetime.now()
+        

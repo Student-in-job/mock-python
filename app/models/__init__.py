@@ -7,6 +7,7 @@ from app.models.client import *
 from app.models.partner import *
 from app.models.contract import *
 from app.models.limit import *
+from app.models.card import *
 
 from app.models.migrations import init_limit_types, init_clients, init_partners
 from app.models.app_settings import AppSettings
