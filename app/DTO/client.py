@@ -20,3 +20,17 @@ class Guarantor(BaseModel):
 class DTOGuarantors(BaseModel):
     guarantors: list[Guarantor]
 
+
+class DTOReturnClient(BaseModel):
+    id: str
+    pinfl: str
+    status: int
+    clientUid: str
+    fullName: str
+    phoneNumber: str
+    scoringStatus: int
+    availableLimit: int
+    contractAvailability: bool
+    hasOverdue: bool
+    overdueDays: int
+    overdueAmount: int

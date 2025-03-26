@@ -10,7 +10,7 @@ class Client(SQLModel, table=True):
     )
     client_uuid: str = Field(sa_column=Column(CHAR(9), name='client_uuid'))
     pinfl: str = Field(sa_column=Column(CHAR(14), name='pinfl', index=True))
-    status: int = Field(default=1)
+    status: int = Field(default=2)
     scoring_status: int = Field(default=0)
     is_resident: int = Field(default=1)
     legal_type: int = Field(default=1)

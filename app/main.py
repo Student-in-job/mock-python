@@ -5,8 +5,8 @@ from fastapi.responses import FileResponse
 
 import os.path
 import app.models as models
-import app.models.test as test
-from app.DTO import DTOScore, DTOClient, DTOGuarantors, DTOCard, DTOCardConfirmation
+from app.DTO import DTOScore, DTOClient, DTOGuarantors, DTOCard, DTOCardConfirmation, DTOError, DTOResponse
+from app.DTO import DTOReturnClient
 import app.classes.my_id_report as my_id
 from app.helpers import Generator
 
@@ -26,31 +26,6 @@ app.mount("/static", StaticFiles(directory=root_path+"/static"), name="static")
 @app.get('/favicon.ico', include_in_schema=False, response_class=FileResponse)
 async def favicon():
     return root_path + "/static/favicon.ico"
-
-
-@app.get('/testdb')
-async def get_test_list(session: models.SessionDep):
-    statement = models.select(test.Test)
-    item = session.exec(statement).first()
-    session.close()
-    return item
-
-
-@app.post('/testdb')
-async def get_test_list(session: models.SessionDep):
-    item = test.Test(id=25, h="Viktor")
-    session.add(item)
-    session.commit()
-    session.close()
-    return "Item added"
-
-
-@app.get('/testdb/list')
-async def get_test_list(session: models.SessionDep):
-    statement = models.select(test.Test)
-    items = session.exec(statement).all()
-    session.close()
-    return {'items': items}
 
 
 @app.post('/clients/onboarding')
@@ -124,7 +99,7 @@ async def client_set_client(client: DTOClient, session: models.SessionDep):
 
     session.refresh(new_client)
     session.close()
-    return {'client_katm_report': client.katmData}
+    return DTOResponse('', data={'client':{'id': str(new_client.id)}})
 
 
 @app.post('/clients/give-limit')
@@ -132,39 +107,61 @@ async def client_set_score(score: DTOScore, session: models.SessionDep, response
     session.statement = models.select(models.Client).where(models.Client.id == score.client_id)
     results = session.exec(session.statement)
     found: bool = False
-    if len(results.fetchall()) > 0:
-        new_limit_transaction: models.LimitBalanceTransaction = models.LimitBalanceTransaction(
-            score.client_id,
-            score.limit_value,
-            models.LimitTransactionTypes.SCORE
-        )
-        session.statement = models.select(models.LimitBalance).where(models.LimitBalance.client_id == score.client_id)
-        results = session.exec(session.statement)
-        new_limit_balance = results.first()
-        if new_limit_balance is None:
-            new_limit_balance = models.LimitBalance(score.client_id, score.limit_value)
-        else:
-            new_limit_balance.value += score.limit_value
-        session.add(new_limit_transaction)
-        session.add(new_limit_balance)
-        session.commit()
+    available_to_give: bool = False
+    client: models.Client = results.one()
+    if client is not None:
+        if client.status == 1:
+            available_to_give = True
+            new_limit_transaction: models.LimitBalanceTransaction = models.LimitBalanceTransaction(
+                score.client_id,
+                score.limit_value,
+                models.LimitTransactionTypes.SCORE
+            )
+            session.statement = models.select(models.LimitBalance).where(models.LimitBalance.client_id == score.client_id)
+            results = session.exec(session.statement)
+            new_limit_balance = results.first()
+            if new_limit_balance is None:
+                new_limit_balance = models.LimitBalance(score.client_id, score.limit_value)
+            else:
+                new_limit_balance.value += score.limit_value
+            session.add(new_limit_transaction)
+            session.add(new_limit_balance)
+            client.scoring_status = 1
+            session.add(client)
+            session.commit()
         found = True
     session.close()
     if not found:
         response.status_code = status.HTTP_400_BAD_REQUEST
         result_message = 'Error ca\'t find client'
     else:
-        result_message = 'Created'
+        if not available_to_give:
+            response.status_code = status.HTTP_400_BAD_REQUEST
+            result_message = 'Error ca\'t assign limit to client with status = 2'
+        else:
+            result_message = 'Created'
     return result_message
 
 
-# TODO: make response as Documented
+# TODO: make response as Documented (Adding hasOverdue, Limit etc)
 @app.get('/clients/by-pinfl/{pinfl}')
 async def client_get_client(session: models.SessionDep, response: Response, pinfl: str):
     session.statement = models.select(models.Client).where(models.Client.pinfl == pinfl)
     results = session.exec(session.statement)
     client = results.first()
-    return client
+    if client is None:
+        response.status_code = status.HTTP_400_BAD_REQUEST
+        error: DTOError = DTOError(5001, 'Can\'t find client with given PINFL')
+        return error
+    else:
+        client_record: DTOReturnClient = DTOReturnClient(
+            id=str(client.id), pinfl=client.pinfl, status=client.status, clientUid=client.client_uuid,
+            fullName=client.surname + ' ' + client.name + ' ' + client.patronymic, phoneNumber=client.phone,
+            scoringStatus=client.scoring_status, availableLimit=0, contractAvailability=False, hasOverdue=True,
+            overdueDays=10, overdueAmount=100000000)
+
+        result = DTOResponse('', data={"client": client_record})
+        return result
 
 
 @app.post('/clients/{clientId}/guarantors')
@@ -172,16 +169,20 @@ async def client_set_guarantors(session: models.SessionDep, response: Response, 
                                 body: DTOGuarantors):
     session.statement = models.select(models.Client).where(models.Client.id == clientId)
     results = session.exec(session.statement)
-    client = results.first()
+    client: models.Client = results.first()
     if client is not None:
         for guarantor in body.guarantors:
             new_guarantor = models.ClientGuarantor(client.id, guarantor.name, guarantor.phoneNumber)
             session.add(new_guarantor)
+            client.status = 1
+            session.add(client)
         session.commit()
-        return {"error": False, "message": 'Success'}
+
+        result = DTOResponse('success')
     else:
         response.status_code = status.HTTP_400_BAD_REQUEST
-        return {"error": True, "message": 'Can\'t find client'}
+        result = DTOError(5002, 'Can\'t find client')
+    return result
 
 
 @app.post('/clients/{clientId}/add-card')
@@ -203,10 +204,11 @@ async def client_add_card(session: models.SessionDep, response: Response, client
         session.add(new_card_operation)
         session.commit()
 
-        return {"error": False, "message": 'Success', "data": {"operationId": op_id}}
+        result = DTOResponse('Success', data={"operationId": op_id})
     else:
         response.status_code = status.HTTP_400_BAD_REQUEST
-        return {"error": True, "message": '', "data": {"errorCode": 5002}}
+        result = DTOError(5002, '')
+    return result
 
 
 @app.post('/clients/{clientId}/confirm-card')
@@ -230,10 +232,11 @@ async def client_confirm_card(session: models.SessionDep, response: Response, cl
         card_operation.is_confirmed = 1
         session.add(card_operation)
         session.commit()
-        return {"error": False, "message": 'Success', "data": {}}
+        result = DTOResponse('Success')
     else:
         response.status_code = status.HTTP_400_BAD_REQUEST
-        return {"error": True, "message": '', "data": {"errorCode": 5011}}
+        result = DTOError(5011, '')
+    return result
 
 
 @app.get('/clients/get-card-otp/{operationId}')
@@ -242,7 +245,8 @@ async def client_get_card_otp(session: models.SessionDep, response: Response, op
     results = session.exec(session.statement)
     card_operation = results.first()
     if card_operation is not None:
-        return {"error": False, "message": 'Success', "data": {'otp': card_operation.otp_code}}
+        result = DTOResponse('Success', data={'otp': card_operation.otp_code})
     else:
         response.status_code = status.HTTP_400_BAD_REQUEST
-        return {"error": True, "message": '', "data": {"errorCode": 5011}}
+        result = DTOError(5011, '')
+    return result
