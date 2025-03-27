@@ -86,12 +86,12 @@ async def client_set_client(client: DTOClient, session: models.SessionDep):
 
 
 @router.post('/clients/give-limit')
-async def client_set_score(score: DTOScore, session: models.SessionDep, response: Response):
+async def client_set_limit(score: DTOScore, session: models.SessionDep, response: Response):
     session.statement = models.select(models.Client).where(models.Client.id == score.client_id)
     results = session.exec(session.statement)
     found: bool = False
     available_to_give: bool = False
-    client: models.Client = results.one()
+    client: models.Client = results.first()
     if client is not None:
         if client.status == 1:
             available_to_give = True

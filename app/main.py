@@ -7,7 +7,7 @@ from fastapi.responses import FileResponse
 import os.path
 import models
 import routers.clients as clients
-
+import routers.contracts as contracts
 
 @asynccontextmanager
 async def init(apps: FastAPI):
@@ -18,6 +18,7 @@ root_path = os.path.dirname(os.path.realpath(__file__))
 application = FastAPI(lifespan=init)
 application.mount("/static", StaticFiles(directory=root_path+"/static"), name="static")
 application.include_router(clients.router)
+application.include_router(contracts.router)
 
 
 @application.get('/favicon.ico', include_in_schema=False, response_class=FileResponse)

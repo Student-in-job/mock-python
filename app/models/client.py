@@ -100,7 +100,7 @@ class ClientAddress(SQLModel, table = True):
     client: Client = Relationship(back_populates='addresses')
 
     def __init__(self, client_id: int, address:str, region_id_cbu:int=None, district_id_cbu:int=None,
-                 region_id_myid: int=None, district_id_myid: int=None, is_active: int=None, address_type: int=1):
+                 region_id_myid: int=None, district_id_myid: int=None, is_active: int=None, address_type: int = 1):
         super().__init__()
         self.client_id = client_id
         self.address = address

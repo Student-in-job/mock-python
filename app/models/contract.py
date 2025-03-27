@@ -32,6 +32,17 @@ class Contract(SQLModel, table=True):
     created_at: datetime
     updated_at: datetime = Field(sa_column=Column(TIMESTAMP, default=datetime.now(), name='updated_at'))
 
+    def __init__(self, client_id: int, total_amount: int, profit_amount: int, period: int, tariff_plan_id: int,
+                 partner_id: int):
+        super().__init__()
+        self.client_id = client_id
+        self.total_amount = total_amount
+        self.profit_amount = profit_amount
+        self.period = period
+        self.tariff_plan_id = tariff_plan_id
+        self.partner_id = partner_id
+        self.created_at = datetime.now()
+
 
 class ContractMerchant(SQLModel, table=True):
     __tablename__ = 'contract_merchants'
@@ -45,6 +56,14 @@ class ContractMerchant(SQLModel, table=True):
     created_at: datetime
     updated_at: datetime = Field(sa_column=Column(TIMESTAMP, default=datetime.now(), name='updated_at'))
 
+    def __init__(self, inn: str, brand_name: str, legal_name: str, contract_id: int):
+        super().__init__()
+        self.inn = inn
+        self.brand_name = brand_name
+        self.legal_name = legal_name
+        self.contract_id = contract_id
+        self.created_at = datetime.now()
+
 
 class ContractSchedule(SQLModel, table=True):
     __tablename__ = 'contract_schedules'
@@ -55,12 +74,22 @@ class ContractSchedule(SQLModel, table=True):
     amount: int = Field(default=0)
     profit_amount: int = Field(default=0)
     paid_amount: int = Field(default=0)
-    payment_date: datetime
-    full_paid_at: datetime
+    payment_date: datetime = Field(nullable=True)
+    full_paid_at: datetime = Field(nullable=True)
     status: int = Field(default=0)
     schedule_type: int = Field(default=0)
     created_at: datetime
     updated_at: datetime = Field(sa_column=Column(TIMESTAMP, default=datetime.now(), name='updated_at'))
+
+    def __init__(self, contract_id: int, amount: int, profit_amount: int, payment_date: datetime = None,
+                 schedule_type: int = None):
+        super().__init__()
+        self.contract_id = contract_id
+        self.amount = amount
+        self.profit_amount = profit_amount
+        self.payment_date = payment_date
+        self.schedule_type = schedule_type
+        self.created_at = datetime.now()
 
 
 class ContractMyIdReport(SQLModel, table=True):
