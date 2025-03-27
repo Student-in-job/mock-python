@@ -1,4 +1,4 @@
-from app.DTO.client import *
-from app.DTO.score import *
-from app.DTO.card import *
-from app.DTO.response import DTOError, DTOResponse
+from .client import *
+from .score import *
+from .card import *
+from .response import DTOError, DTOResponse

@@ -1,4 +1,4 @@
-from app.classes.my_id_report import ReportMYID
+from classes.my_id_report import ReportMYID
 from pydantic import BaseModel
 
 

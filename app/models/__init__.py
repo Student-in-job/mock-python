@@ -3,15 +3,15 @@ from datetime import datetime
 from fastapi import Depends
 from sqlmodel import Session, create_engine, SQLModel, select
 
-from app.models.client import *
-from app.models.partner import *
-from app.models.contract import *
-from app.models.limit import *
-from app.models.card import *
+from .client import *
+from .partner import *
+from .contract import *
+from .limit import *
+from .card import *
 
-from app.models.migrations import init_limit_types, init_clients, init_partners
-from app.models.app_settings import AppSettings
-from app.settings import Settings
+from .migrations import init_limit_types, init_clients, init_partners
+from .app_settings import AppSettings
+from settings import Settings
 
 
 settings = Settings()

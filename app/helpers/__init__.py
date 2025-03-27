@@ -1,1 +1,1 @@
-from app.helpers.generator import *
+from .generator import *

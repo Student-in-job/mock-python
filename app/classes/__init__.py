@@ -1,5 +1,5 @@
-import app.classes.my_id_report
-import app.classes.katm_infoscore
-import app.classes.katm_universal
-import app.classes.urcard_scoring
-import app.classes.humo_scoring
+from .my_id_report import *
+from .katm_infoscore import *
+from .katm_universal import *
+from .urcard_scoring import *
+from .humo_scoring import *
