@@ -29,6 +29,8 @@ class Contract(SQLModel, table=True):
     extra_debt_amount: int = Field(default=0)
     is_full_debt_required: int = Field(default=0, index=True)
     date_of_full_debt_required: datetime = Field(nullable=True)
+    overdue_days: int = Field(default=-1)
+    overdue_amount: int = Field(default=0)
     created_at: datetime
     updated_at: datetime = Field(sa_column=Column(TIMESTAMP, default=datetime.now(), name='updated_at'))
 

@@ -84,7 +84,7 @@ async def client_set_client(client: DTOClient, session: models.SessionDep):
     session.close()
     return DTOResponse('', data={'client':{'id': str(new_client.id)}})
 
-
+# TODO: make a limit assign as documented
 @router.post('/clients/give-limit')
 async def client_set_limit(score: DTOScore, session: models.SessionDep, response: Response):
     session.statement = models.select(models.Client).where(models.Client.id == score.client_id)
@@ -126,7 +126,6 @@ async def client_set_limit(score: DTOScore, session: models.SessionDep, response
     return result_message
 
 
-# TODO: make response as Documented (Adding hasOverdue, Limit etc)
 @router.get('/clients/by-pinfl/{pinfl}')
 async def client_get_client(session: models.SessionDep, response: Response, pinfl: str):
     session.statement = models.select(models.Client).where(models.Client.pinfl == pinfl)
@@ -140,9 +139,15 @@ async def client_get_client(session: models.SessionDep, response: Response, pinf
         client_record: DTOReturnClient = DTOReturnClient(
             id=str(client.id), pinfl=client.pinfl, status=client.status, clientUid=client.client_uuid,
             fullName=client.surname + ' ' + client.name + ' ' + client.patronymic, phoneNumber=client.phone,
-            scoringStatus=client.scoring_status, availableLimit=0, contractAvailability=False, hasOverdue=True,
-            overdueDays=10, overdueAmount=100000000)
-
+            scoringStatus=client.scoring_status, availableLimit=0,
+            contractAvailability=False if (client.has_overdue == 1) else True,
+            hasOverdue=True if (client.has_overdue == 1) else False,
+            overdueDays=client.overdue_days, overdueAmount=client.overdue_amount)
+        session.statement = models.select(models.LimitBalance).where(models.LimitBalance.client_id == client.id)
+        results = session.exec(session.statement)
+        limit: models.LimitBalance = results.first()
+        if limit is not None:
+            client_record.availableLimit = limit.value
         result = DTOResponse('', data={"client": client_record})
         return result
 

@@ -25,6 +25,9 @@ class Client(SQLModel, table=True):
     # phones: list["ClientPhone"] = Relationship(back_populates='client')
     documents: list["ClientDocument"] = Relationship(back_populates='client')
     addresses: list["ClientAddress"] = Relationship(back_populates='client')
+    has_overdue: int = Field(default=0)
+    overdue_days: int = Field(default=-1)
+    overdue_amount: int = Field(default=0)
 
     def __init__(self, client_uuid: str, pinfl: str, name: str, surname: str, phone: str,
                  birth_date: datetime, patronymic: str=None, gender: int=None):
