@@ -4,6 +4,7 @@ import uuid as uuid_pkg
 from sqlmodel import Field, SQLModel
 from datetime import datetime
 
+
 class AppSettings(SQLModel, table=True):
     __tablename__ = 'application_settings'
     id: int = Field(

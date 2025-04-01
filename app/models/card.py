@@ -1,10 +1,10 @@
 from sqlalchemy import Column, Integer
-from sqlalchemy.dialects.postgresql import TIMESTAMP, CHAR, JSONB
+from sqlalchemy.dialects.postgresql import TIMESTAMP, CHAR
 from sqlmodel import Field, SQLModel, Relationship
 from datetime import datetime
 
 
-class Card_Operations(SQLModel, table=True):
+class CardOperations(SQLModel, table=True):
     __tablename__ = 'operations_card'
     id: int = Field(
         sa_column=Column(Integer, nullable=False, primary_key=True, name='id')
@@ -20,7 +20,7 @@ class Card_Operations(SQLModel, table=True):
     updated_at: datetime = Field(sa_column=Column(TIMESTAMP, default=datetime.now(), name='updated_at'))
 
     def __init__(self, client_id: int, phone: str, pan: str, expire: str, operation_id: str,
-                 otp_code: str, is_confirmed: int=None):
+                 otp_code: str, is_confirmed: int = None):
         super().__init__()
         self.client_id = client_id
         self.phone = phone
@@ -38,7 +38,6 @@ class Card(SQLModel, table=True):
         sa_column=Column(Integer, nullable=False, primary_key=True, name='id')
     )
     client_id: int | None = Field(default=None, foreign_key="clients.id", ondelete='CASCADE')
-#     pinfl: str = Field(sa_column=Column(CHAR(4), name='pinfl'))
     phone: str = Field(sa_column=Column(CHAR(16), name='phone'))
     pan: str = Field(sa_column=Column(CHAR(16), name='pan'))
     expire: str = Field(sa_column=Column(CHAR(4), name='expire'))

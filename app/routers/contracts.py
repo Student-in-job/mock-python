@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Request, Response, status
+from fastapi import APIRouter, Response, status
 
 # import app.models as models
 # from app.DTO import DTOContract, DTOError, DTOResponse, DTOReturnContract, DTOReturnSchedule, DTOContractConfirm, \
@@ -7,12 +7,12 @@ from fastapi import APIRouter, Request, Response, status
 # from app.helpers import DatesUtils
 import models as models
 from DTO import DTOContract, DTOError, DTOResponse, DTOReturnContract, DTOReturnSchedule, DTOContractConfirm, \
-    DTOContractConfirm, DTOReturnContractInfo, DTOReturnScheduleInfo, DTOMerchant
+    DTOReturnContractInfo, DTOReturnScheduleInfo, DTOMerchant
 from settings import Settings
 from helpers import DatesUtils
 
 import math
-from datetime import datetime, timedelta
+from datetime import datetime
 
 settings = Settings()
 router = APIRouter()
@@ -122,6 +122,7 @@ async def contract_add(contract: DTOContract, session: models.SessionDep, respon
                     for date_schedule in new_schedules:
                         session.add(date_schedule)
                     session.commit()
+                    result = DTOResponse('', data={"contract": contract_record})
                 else:
                     result = DTOError(5019, 'The given contract amount exceeds available limit')
             else:
@@ -131,9 +132,7 @@ async def contract_add(contract: DTOContract, session: models.SessionDep, respon
     else:
         result = DTOError(5002, 'Can\'t find client')
 
-    if found:
-        result = DTOResponse('', data={"contract": contract_record})
-    else:
+    if not found:
         response.status_code = status.HTTP_400_BAD_REQUEST
     return result
 
@@ -171,19 +170,17 @@ async def contract_confirm(contract: DTOContractConfirm, session: models.Session
                     amount=item.amount
                 )
             )
-
+        result = DTOResponse('', data={"contract": contract_record})
     else:
         result = DTOError(5020, 'Can\'t find contract')
 
-    if found:
-        result = DTOResponse('', data={"contract": contract_record})
-    else:
+    if not found:
         response.status_code = status.HTTP_400_BAD_REQUEST
     return result
 
 
 @router.get('/contracts/{contract_id}')
-async def contracts_get(session: models.SessionDep, response: Response, contract_id:int):
+async def contracts_get(session: models.SessionDep, response: Response, contract_id: int):
     found = False
     session.statement = models.select(models.Contract).where(models.Contract.id == int(contract_id))
     results = session.exec(session.statement)
@@ -227,12 +224,10 @@ async def contracts_get(session: models.SessionDep, response: Response, contract
                     status=item.status
                 )
             )
-
+        result = DTOResponse('', data={"contract": contract_record})
     else:
         result = DTOError(5020, 'Can\'t find contract')
 
-    if found:
-        result = DTOResponse('', data={"contract": contract_record})
-    else:
+    if not found:
         response.status_code = status.HTTP_400_BAD_REQUEST
     return result

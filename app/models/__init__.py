@@ -1,5 +1,4 @@
 from typing import Annotated
-from datetime import datetime
 from fastapi import Depends
 from sqlmodel import Session, create_engine, SQLModel, select
 
@@ -32,21 +31,3 @@ def create_db_and_tables():
     init_limit_types(engine)
     init_clients(engine)
     init_partners(engine)
-    # p = save_contract(Session(engine))
-
-
-def save_contract(session: Session):
-    item = Contract(
-        client_id=12,
-        total_amount=100000,
-        profit_amount=44000,
-        period=12,
-        tariff_plan_id=1,
-        partner_id=1,
-        created_at=datetime.now())
-    session.add(item)
-    session.commit()
-    session.close()
-    return "Item added"
-
-

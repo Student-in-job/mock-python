@@ -5,7 +5,7 @@ from typing import Any, Union
 class DTOErrorData(BaseModel):
     error_code: int = None
 
-    def __init__(self, code:int):
+    def __init__(self, code: int):
         super().__init__()
         self.error_code = code
 
@@ -15,10 +15,11 @@ class DTOError(BaseModel):
     message: str = ''
     data: DTOErrorData = None
 
-    def __init__(self, code:int, message: str):
+    def __init__(self, code: int, message: str):
         super().__init__()
         self.data = DTOErrorData(code)
         self.message = message
+
 
 class DTOResponse(BaseModel):
     error: bool = False

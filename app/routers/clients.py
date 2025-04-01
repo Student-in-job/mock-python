@@ -1,5 +1,10 @@
-from fastapi import APIRouter, Request, Response, status
+from fastapi import APIRouter, Response, status
 
+# import app.models as models
+# from app.DTO import DTOScore, DTOClient, DTOGuarantors, DTOCard, DTOCardConfirmation, DTOError, DTOResponse
+# from app.DTO import DTOReturnClient
+# import app.classes.my_id_report as my_id
+# from app.helpers import Generator
 import models
 from DTO import DTOScore, DTOClient, DTOGuarantors, DTOCard, DTOCardConfirmation, DTOError, DTOResponse
 from DTO import DTOReturnClient
@@ -16,7 +21,7 @@ async def client_set_client(client: DTOClient, session: models.SessionDep):
     myid_data: my_id.ReportMYID = client.myIdData
     personal_data: my_id.MyIDProfileCommonData = myid_data.common_data
     doc_data: my_id.MyIDProfileDocData = myid_data.doc_data
-    address_data = my_id.MyIDProfileAddress = myid_data.address
+    address_data: my_id.MyIDProfileAddress = myid_data.address
     new_client = models.Client(
         client.login,
         personal_data.pinfl,
@@ -82,9 +87,9 @@ async def client_set_client(client: DTOClient, session: models.SessionDep):
 
     session.refresh(new_client)
     session.close()
-    return DTOResponse('', data={'client':{'id': str(new_client.id)}})
+    return DTOResponse('', data={'client': {'id': str(new_client.id)}})
 
-# TODO: make a limit assign as documented
+
 @router.post('/clients/give-limit')
 async def client_set_limit(score: DTOScore, session: models.SessionDep, response: Response):
     session.statement = models.select(models.Client).where(models.Client.id == score.client_id)
@@ -100,7 +105,8 @@ async def client_set_limit(score: DTOScore, session: models.SessionDep, response
                 score.limit_value,
                 models.LimitTransactionTypes.SCORE
             )
-            session.statement = models.select(models.LimitBalance).where(models.LimitBalance.client_id == score.client_id)
+            session.statement = models.select(models.LimitBalance).where(
+                models.LimitBalance.client_id == score.client_id)
             results = session.exec(session.statement)
             new_limit_balance = results.first()
             if new_limit_balance is None:
@@ -116,14 +122,14 @@ async def client_set_limit(score: DTOScore, session: models.SessionDep, response
     session.close()
     if not found:
         response.status_code = status.HTTP_400_BAD_REQUEST
-        result_message = 'Error ca\'t find client'
+        result = DTOError(5002, message='Error ca\'t find client')
     else:
         if not available_to_give:
             response.status_code = status.HTTP_400_BAD_REQUEST
-            result_message = 'Error ca\'t assign limit to client with status = 2'
+            result = DTOError(2003, message='Error ca\'t assign limit to client with status = 2')
         else:
-            result_message = 'Created'
-    return result_message
+            result = DTOResponse(message='Created')
+    return result
 
 
 @router.get('/clients/by-pinfl/{pinfl}')
@@ -152,10 +158,10 @@ async def client_get_client(session: models.SessionDep, response: Response, pinf
         return result
 
 
-@router.post('/clients/{clientId}/guarantors')
-async def client_set_guarantors(session: models.SessionDep, response: Response, clientId: int,
+@router.post('/clients/{client_id}/guarantors')
+async def client_set_guarantors(session: models.SessionDep, response: Response, client_id: int,
                                 body: DTOGuarantors):
-    session.statement = models.select(models.Client).where(models.Client.id == clientId)
+    session.statement = models.select(models.Client).where(models.Client.id == client_id)
     results = session.exec(session.statement)
     client: models.Client = results.first()
     if client is not None:
@@ -173,15 +179,15 @@ async def client_set_guarantors(session: models.SessionDep, response: Response, 
     return result
 
 
-@router.post('/clients/{clientId}/add-card')
-async def client_add_card(session: models.SessionDep, response: Response, clientId: int, card: DTOCard):
-    session.statement = models.select(models.Client).where(models.Client.id == clientId)
+@router.post('/clients/{client_id}/add-card')
+async def client_add_card(session: models.SessionDep, response: Response, client_id: int, card: DTOCard):
+    session.statement = models.select(models.Client).where(models.Client.id == client_id)
     results = session.exec(session.statement)
     client = results.first()
     op_id: str = Generator.generate_string(10)
     otp_id: str = Generator.generate_int(6)
     if client is not None:
-        new_card_operation = models.Card_Operations(
+        new_card_operation = models.CardOperations(
             client.id,
             card.phoneNumber,
             card.pan,
@@ -199,13 +205,13 @@ async def client_add_card(session: models.SessionDep, response: Response, client
     return result
 
 
-@router.post('/clients/{clientId}/confirm-card')
-async def client_confirm_card(session: models.SessionDep, response: Response, clientId: int,
+@router.post('/clients/{client_id}/confirm-card')
+async def client_confirm_card(session: models.SessionDep, response: Response, client_id: int,
                               card_confirmation: DTOCardConfirmation):
-    session.statement = models.select(models.Card_Operations).where(
-        models.Card_Operations.client_id == clientId,
-        models.Card_Operations.operation_id == card_confirmation.operationId,
-        models.Card_Operations.otp_code == card_confirmation.otp,
+    session.statement = models.select(models.CardOperations).where(
+        models.CardOperations.client_id == client_id,
+        models.CardOperations.operation_id == card_confirmation.operationId,
+        models.CardOperations.otp_code == card_confirmation.otp,
     )
     results = session.exec(session.statement)
     card_operation = results.first()
@@ -227,9 +233,9 @@ async def client_confirm_card(session: models.SessionDep, response: Response, cl
     return result
 
 
-@router.get('/clients/get-card-otp/{operationId}')
-async def client_get_card_otp(session: models.SessionDep, response: Response, operationId: str):
-    session.statement = models.select(models.Card_Operations).where(models.Card_Operations.operation_id == operationId)
+@router.get('/clients/get-card-otp/{operation_id}')
+async def client_get_card_otp(session: models.SessionDep, response: Response, operation_id: str):
+    session.statement = models.select(models.CardOperations).where(models.CardOperations.operation_id == operation_id)
     results = session.exec(session.statement)
     card_operation = results.first()
     if card_operation is not None:
